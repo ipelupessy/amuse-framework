@@ -587,7 +587,129 @@ class TestGrids(amusetest.TestCase):
         self.assertEquals(grid[...].mass,12.)
         self.assertEquals(grid.mass,12.)
 
+    def test48(self):
+        p=datamodel.Grid(3)
 
+        p.a1=1.
+        p.a2=1. | units.rad
+        p.a3=1. | units.deg
+        
+        # test all combinations:
+        
+        p[0].a1=2.
+        p[0].a2=2.
+        p[0].a3=2.
+                
+        p[1].a1=2. | units.rad
+        p[1].a2=2. | units.rad
+        p[1].a3=2. | units.rad
+        
+        p[2].a1=2. | units.deg
+        p[2].a2=2. | units.deg
+        p[2].a3=2. | units.deg
+        
+        self.assertEquals( p.a1, [2.,2., (2. | units.deg).value_in(units.none)])
+        self.assertEquals( p.a2, [2.,2., (2. | units.deg).value_in(units.none)])
+        self.assertEquals( p.a3, [(2. | units.rad).in_(units.deg),
+                                  (2. | units.rad).in_(units.deg) , 2. | units.deg])
+
+
+    def test50(self):
+        grid = datamodel.Grid(3,2)
+        for i in range(3):
+            grid.density = (i * 1.0) | units.kg/units.m**3
+            grid.savepoint((i + 1) * 1.0 | units.s)
+
+        dens = grid.get_timeline_of_attribute("density")
+        self.assertEquals(len(dens), 3)
+        self.assertEquals(dens[0][1].shape, (3,2))
+        self.assertEquals(dens[1][1].shape, (3,2))
+        self.assertEquals(dens[2][1].shape, (3,2))
+        self.assertEquals(dens[0][0], 1.0 | units.s)
+        self.assertEquals(dens[1][0], 2.0 | units.s)
+        self.assertEquals(dens[2][0], 3.0 | units.s)
+
+    def test51(self):
+        grid = datamodel.Grid(3,2)
+        for i in range(3):
+            grid.density = (i * 1.0) | units.kg/units.m**3
+            grid.savepoint((i + 1) * 1.0 | units.s)
+
+        dens = grid[0:1,:].get_timeline_of_attribute("density")
+        self.assertEquals(len(dens), 3)
+        self.assertEquals(dens[0][1].shape, (1,2))
+        self.assertEquals(dens[1][1].shape, (1,2))
+        self.assertEquals(dens[2][1].shape, (1,2))
+        self.assertEquals(dens[0][0], 1.0 | units.s)
+        self.assertEquals(dens[1][0], 2.0 | units.s)
+        self.assertEquals(dens[2][0], 3.0 | units.s)
+
+    def test51(self):
+        grid = datamodel.Grid(3,2)
+        for i in range(3):
+            grid.density = (i * 1.0) | units.kg/units.m**3
+            grid.savepoint((i + 1) * 1.0 | units.s)
+
+        time,dens = grid[0:1,:].get_timeline_of_attribute_as_vector("density")
+        self.assertEquals(dens.shape, (3,1,2))
+        self.assertEquals(dens[0].shape, (1,2))
+        self.assertEquals(dens[1].shape, (1,2))
+        self.assertEquals(dens[2].shape, (1,2))
+        self.assertEquals(time[0], 1.0 | units.s)
+        self.assertEquals(time[1], 2.0 | units.s)
+        self.assertEquals(time[2], 3.0 | units.s)
+
+    def test52(self):
+        grid = datamodel.Grid(3,2)
+        for i in range(3):
+            grid.density = (i * 1.0) | units.kg/units.m**3
+            grid.savepoint((i + 1) * 1.0 | units.s)
+
+        time,dens = grid[2,1].get_timeline_of_attribute_as_vector("density")
+        self.assertEquals(dens.shape, (3,))
+        self.assertEquals(dens[0], 0 | units.kg/units.m**3)
+        self.assertEquals(dens[1], 1 | units.kg/units.m**3)
+        self.assertEquals(dens[2], 2 | units.kg/units.m**3)
+        self.assertEquals(time[0], 1.0 | units.s)
+        self.assertEquals(time[1], 2.0 | units.s)
+        self.assertEquals(time[2], 3.0 | units.s)
+
+    def test53(self):
+        grid = datamodel.Grid(3,2)
+        subgrid=grid[0:1,:]
+        for i in range(3):
+            grid.density = (i * 1.0) | units.kg/units.m**3
+            subgrid.savepoint((i + 1) * 1.0 | units.s)
+
+        time,dens = subgrid.get_timeline_of_attribute_as_vector("density")
+        self.assertEquals(dens.shape, (3,1,2))
+        self.assertEquals(dens[0], 0 | units.kg/units.m**3)
+        self.assertEquals(dens[1], 1 | units.kg/units.m**3)
+        self.assertEquals(dens[2], 2 | units.kg/units.m**3)
+        self.assertEquals(time[0], 1.0 | units.s)
+        self.assertEquals(time[1], 2.0 | units.s)
+        self.assertEquals(time[2], 3.0 | units.s)
+
+    def test54(self):
+        """
+        illustrates getting subgrid/gridpoint with history from subgrid with history
+        """
+        grid = datamodel.Grid(3,2)
+        subgrid=grid[0:1,:]
+        for i in range(3):
+            grid.density = (i * 1.0) | units.kg/units.m**3
+            subgrid.savepoint((i + 1) * 1.0 | units.s)
+        # if the gridpoint derives directly from subgrid, its defined on the original
+        # grid (which has no history...)
+        subsub=subgrid.savepoint((i + 1) * 1.0 | units.s)
+        time,dens = subsub[0,1].get_timeline_of_attribute_as_vector("density")
+        self.assertEquals(dens.shape, (3,))
+        self.assertEquals(dens[0], 0 | units.kg/units.m**3)
+        self.assertEquals(dens[1], 1 | units.kg/units.m**3)
+        self.assertEquals(dens[2], 2 | units.kg/units.m**3)
+        self.assertEquals(time[0], 1.0 | units.s)
+        self.assertEquals(time[1], 2.0 | units.s)
+        self.assertEquals(time[2], 3.0 | units.s)
 
 class TestGridFactories(amusetest.TestCase):
     def test1(self):
