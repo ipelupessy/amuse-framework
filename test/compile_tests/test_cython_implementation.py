@@ -128,7 +128,15 @@ class TestCythonImplementationInterface(test_c_implementation.TestCImplementatio
 
     def setUp(self):
         self.skip_if_no_cython()
-        super(TestCythonImplementationInterface, self).setUp()
+        super(test_c_implementation.TestCImplementationInterface, self).setUp()
+        print "building...",
+        self.check_can_compile_modules()
+        try:
+            self.build_worker()
+        except Exception as ex:
+            print ex
+            raise
+        print "done"
 
 
     def tearDown(self):
@@ -207,7 +215,12 @@ class TestCythonImplementationInterface(test_c_implementation.TestCImplementatio
 
         os.chmod(self.exefile, 0777)
         
-        process, stdout, stderr = compile_tools.open_subprocess([config.compilers.cython,  sourcename, '-o', cname])
+        import mpi4py
+        process, stdout, stderr = compile_tools.open_subprocess([config.compilers.cython, 
+        '-I',
+        mpi4py.get_include(),
+         sourcename, '-o', cname])
+
         
         if process.returncode == 0:
             compile_tools.wait_for_file(cname)
@@ -238,7 +251,11 @@ class TestCythonFortranImplementationInterface(test_fortran_implementation.TestI
 
     def setUp(self):
         self.skip_if_no_cython()
-        super(TestCythonFortranImplementationInterface, self).setUp()
+        super(test_fortran_implementation.TestInterface, self).setUp()
+        print "building"
+        self.check_can_compile_modules()
+        self.build_worker()
+
 
     def tearDown(self):
         pass
